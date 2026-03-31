@@ -1,0 +1,75 @@
+# ============================================================
+# docker-compose.yml — 垂直兴趣社区 一键部署
+# ============================================================
+# 使用方式：
+#   docker-compose up -d
+#
+# 包含：
+#   1. MySQL 8.0 数据库（自动初始化 schema + 数据）
+#   2. Flask 后端 API（端口 5000）
+#
+# 前端：在 claude.ai 中打开 .jsx 文件即可预览
+# ============================================================
+
+version: "3.8"
+
+services:
+  # ── MySQL 数据库 ──
+  db:
+    image: mysql:8.0
+    container_name: vc-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: vertical_community
+      MYSQL_CHARACTER_SET_SERVER: utf8mb4
+      MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
+    ports:
+      - "3306:3306"
+    volumes:
+      # 按文件名字母序自动执行 /docker-entrypoint-initdb.d/ 下的 SQL
+      # 所以用数字前缀保证执行顺序
+      - ./db/vertical_community_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
+      - ./db/vertical_community_procedures.sql:/docker-entrypoint-initdb.d/02_procedures.sql
+      - ./db/vertical_community_views.sql:/docker-entrypoint-initdb.d/03_views.sql
+      - ./db/vertical_community_seed_data.sql:/docker-entrypoint-initdb.d/04_seed_data.sql
+      - mysql_data:/var/lib/mysql
+    command: >
+      --default-authentication-plugin=mysql_native_password
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --event-scheduler=ON
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot123"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Flask 后端 ──
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: vc-backend
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: root123
+      DB_NAME: vertical_community
+      JWT_SECRET: vc-production-secret-change-me
+      FLASK_DEBUG: "false"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/', timeout=5)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mysql_data:
