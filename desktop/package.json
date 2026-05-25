@@ -1,0 +1,63 @@
+{
+  "name": "portfolio-library-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Windows desktop shell for Portfolio Library.",
+  "main": "main.js",
+  "scripts": {
+    "check:runtime": "node scripts/check-runtime.js",
+    "build:frontend": "npm --prefix ../frontend run build",
+    "build:backend": "pyinstaller portfolio-backend.spec --noconfirm --distpath ../backend/dist --workpath ../backend/build",
+    "dist": "npm run check:runtime && npm run build:frontend && npm run build:backend && electron-builder",
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^31.7.7",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "local.portfolio.library",
+    "productName": "Portfolio Library",
+    "directories": {
+      "output": "../dist-desktop"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "loading.html",
+      "THIRD_PARTY_LICENSES.md",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../frontend/dist",
+        "to": "frontend"
+      },
+      {
+        "from": "../backend/dist/portfolio-backend.exe",
+        "to": "backend/portfolio-backend.exe"
+      },
+      {
+        "from": "../db/creator_workspace_minimal.sql",
+        "to": "db/creator_workspace_minimal.sql"
+      },
+      {
+        "from": "runtime/mysql",
+        "to": "runtime/mysql"
+      }
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "zip"
+      ],
+      "artifactName": "Portfolio-Library-${version}-win-${arch}.${ext}"
+    },
+    "nsis": {
+      "artifactName": "Portfolio-Library-Setup-${version}.${ext}",
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "deleteAppDataOnUninstall": false
+    }
+  }
+}

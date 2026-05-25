@@ -1,0 +1,10 @@
+exports/
+__pycache__/
+*.pyc
+frontend/node_modules/
+frontend/dist/
+desktop/node_modules/
+backend/build/
+backend/dist/
+dist-desktop/
+desktop/runtime/mysql/
